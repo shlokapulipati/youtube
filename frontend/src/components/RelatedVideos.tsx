@@ -23,8 +23,8 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
         >
           <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden flex-shrink-0">
             <video
-              src={vid}
-              className="object-cover group-hover:scale-105 transition-transform duration-200"
+              src={(video as any)?.filepath?.startsWith("/video/") ? (video as any).filepath : `${process.env.BACKEND_URL}/${(video as any)?.filepath}`}
+              className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
             />
           </div>
           <div className="flex-1 min-w-0">

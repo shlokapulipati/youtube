@@ -9,6 +9,7 @@ import likeroutes from "./routes/like.js";
 import watchlaterroutes from "./routes/watchlater.js";
 import historyrroutes from "./routes/history.js";
 import commentroutes from "./routes/comment.js";
+import downloadroutes from "./routes/download.js";
 dotenv.config();
 const app = express();
 import path from "path";
@@ -26,6 +27,7 @@ app.use("/like", likeroutes);
 app.use("/watch", watchlaterroutes);
 app.use("/history", historyrroutes);
 app.use("/comment", commentroutes);
+app.use("/download", downloadroutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
@@ -33,11 +35,18 @@ app.listen(PORT, () => {
 });
 
 const DBURL = process.env.DB_URL;
+
 mongoose
-  .connect(DBURL)
+  .connect(DBURL, {
+    serverSelectionTimeoutMS: 2000, // Reduced from 5000 to fail faster
+  })
   .then(() => {
     console.log("Mongodb connected");
   })
   .catch((error) => {
-    console.log(error);
+    console.error("MongoDB connection error:", error.message); // Cleaned up massive error log
   });
+
+// Disable buffering globally so it doesn't hang for 10s on every request
+mongoose.set('bufferCommands', false);
+

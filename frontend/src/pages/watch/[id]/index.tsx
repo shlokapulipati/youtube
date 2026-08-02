@@ -17,10 +17,27 @@ const index = () => {
     const fetchvideo = async () => {
       if (!id || typeof id !== "string") return;
       try {
-        const res = await axiosInstance.get("/video/getall");
-        const video = res.data?.filter((vid: any) => vid._id === id);
+        let allVideos = [];
+        try {
+          const res = await axiosInstance.get("/video/getall");
+          allVideos = res.data || [];
+        } catch (err) {
+          console.log("Failed to fetch from backend, using mocks");
+        }
+        
+        // Mock fallback if DB is empty
+        if (allVideos.length === 0) {
+          allVideos = [
+            { _id: "111111111111111111111111", videotitle: "First Screen Recording", filepath: "/video/Screen Recording 2026-03-17 194808.mp4", videochanel: "Local Tester", views: 1200, createdAt: new Date().toISOString() },
+            { _id: "222222222222222222222222", videotitle: "Second Screen Recording", filepath: "/video/Screen Recording 2026-07-04 192248.mp4", videochanel: "Local Tester", views: 23000, createdAt: new Date().toISOString() },
+            { _id: "333333333333333333333333", videotitle: "Third Screen Recording", filepath: "/video/Screen Recording 2026-07-05 182954.mp4", videochanel: "Local Tester", views: 4000, createdAt: new Date().toISOString() },
+            { _id: "444444444444444444444444", videotitle: "Sample VDO", filepath: "/video/vdo.mp4", videochanel: "Local Tester", views: 300, createdAt: new Date().toISOString() },
+          ];
+        }
+
+        const video = allVideos.filter((vid: any) => vid._id === id);
         setvideo(video[0]);
-        setvide(res.data);
+        setvide(allVideos);
       } catch (error) {
         console.log(error);
       } finally {

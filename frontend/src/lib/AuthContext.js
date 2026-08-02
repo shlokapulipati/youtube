@@ -10,6 +10,19 @@ const UserContext = createContext();
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem("user");
+      if (saved) {
+        try {
+          setUser(JSON.parse(saved));
+        } catch (e) {
+          console.error("Error parsing saved user", e);
+        }
+      }
+    }
+  }, []);
+
   const login = (userdata) => {
     setUser(userdata);
     if (typeof window !== 'undefined') {

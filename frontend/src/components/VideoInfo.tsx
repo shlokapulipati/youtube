@@ -12,6 +12,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { useUser } from "@/lib/AuthContext";
 import axiosInstance from "@/lib/axiosinstance";
+import { toast } from "sonner";
 
 const VideoInfo = ({ video }: any) => {
   const [likes, setlikes] = useState(video.Like || 0);
@@ -31,9 +32,24 @@ const VideoInfo = ({ video }: any) => {
   useEffect(() => {
     setlikes(video.Like || 0);
     setDislikes(video.Dislike || 0);
-    setIsLiked(false);
-    setIsDisliked(false);
-  }, [video]);
+    
+    const checkStatus = async () => {
+      if (user && video?._id) {
+        try {
+          const [likeRes, watchRes] = await Promise.all([
+            axiosInstance.post('/like/check', { userId: user._id, videoId: video._id }),
+            axiosInstance.post('/watch/check', { userId: user._id, videoId: video._id })
+          ]);
+          setIsLiked(likeRes.data.liked);
+          setIsWatchLater(watchRes.data.watchlater);
+        } catch (error) {
+          console.error("Failed to check status", error);
+        }
+      }
+    };
+    
+    checkStatus();
+  }, [video, user]);
 
   useEffect(() => {
     const handleviews = async () => {
@@ -46,7 +62,11 @@ const VideoInfo = ({ video }: any) => {
           return console.log(error);
         }
       } else {
-        return await axiosInstance.post(`/history/views/${video?._id}`);
+        try {
+          return await axiosInstance.post(`/history/views/${video?._id}`);
+        } catch (error) {
+          return console.log(error);
+        }
       }
     };
     handleviews();
@@ -57,17 +77,17 @@ const VideoInfo = ({ video }: any) => {
       const res = await axiosInstance.post(`/like/${video._id}`, {
         userId: user?._id,
       });
-      if (res.data.liked) {
-        if (isLiked) {
-          setlikes((prev: any) => prev - 1);
-          setIsLiked(false);
-        } else {
+      if (res.status === 200) {
+        if (res.data.liked) {
           setlikes((prev: any) => prev + 1);
           setIsLiked(true);
           if (isDisliked) {
             setDislikes((prev: any) => prev - 1);
             setIsDisliked(false);
           }
+        } else {
+          setlikes((prev: any) => prev - 1);
+          setIsLiked(false);
         }
       }
     } catch (error) {
@@ -90,25 +110,24 @@ const VideoInfo = ({ video }: any) => {
   };
   const handleDislike = async () => {
     if (!user) return;
+    toast.error("Dislike is not fully implemented on the backend yet");
+  };
+
+  const handleDownload = async () => {
+    if (!user) {
+      toast.error("Please sign in to download videos");
+      return;
+    }
+    
     try {
-      const res = await axiosInstance.post(`/like/${video._id}`, {
-        userId: user?._id,
+      toast.loading("Requesting download...", { id: "download" });
+      const res = await axiosInstance.post(`/download/request`, {
+        userid: user._id,
+        videoid: video._id
       });
-      if (!res.data.liked) {
-        if (isDisliked) {
-          setDislikes((prev: any) => prev - 1);
-          setIsDisliked(false);
-        } else {
-          setDislikes((prev: any) => prev + 1);
-          setIsDisliked(true);
-          if (isLiked) {
-            setlikes((prev: any) => prev - 1);
-            setIsLiked(false);
-          }
-        }
-      }
-    } catch (error) {
-      console.log(error);
+      toast.success(res.data.message || "Video downloaded successfully", { id: "download" });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to download video", { id: "download" });
     }
   };
   return (
@@ -179,6 +198,7 @@ const VideoInfo = ({ video }: any) => {
             variant="ghost"
             size="sm"
             className="bg-gray-100 rounded-full"
+            onClick={handleDownload}
           >
             <Download className="w-5 h-5 mr-2" />
             Download

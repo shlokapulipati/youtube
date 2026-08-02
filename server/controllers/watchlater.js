@@ -37,3 +37,14 @@ export const getallwatchlater = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+export const checkWatchLater = async (req, res) => {
+  const { userId, videoId } = req.body;
+  if (!userId || !videoId) return res.status(200).json({ watchlater: false });
+  try {
+    const existing = await watchlater.findOne({ viewer: userId, videoid: videoId });
+    return res.status(200).json({ watchlater: !!existing });
+  } catch (error) {
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};

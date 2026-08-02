@@ -1,8 +1,31 @@
 import comment from "../Modals/comment.js";
 import mongoose from "mongoose";
 
+const BAD_WORDS = ["spam", "abuse", "fake", "scam"];
+
+const detectSpamOrAbuse = (text) => {
+  if (!text) return null;
+  const lowerText = text.toLowerCase();
+  
+  const containsBadWords = BAD_WORDS.some(word => lowerText.includes(word));
+  const repeatedCharsRegex = /([!@#$%^&*])\1{4,}/;
+  const longWordsRegex = /[^\s]{25,}/;
+
+  if (containsBadWords) return "Comment contains inappropriate language.";
+  if (repeatedCharsRegex.test(text)) return "Avoid excessive special characters.";
+  if (longWordsRegex.test(text)) return "Comment looks like spam.";
+  
+  return null;
+};
+
 export const postcomment = async (req, res) => {
   const commentdata = req.body;
+  
+  const spamError = detectSpamOrAbuse(commentdata.commentbody);
+  if (spamError) {
+    return res.status(400).json({ message: spamError });
+  }
+
   const postcomment = new comment(commentdata);
   try {
     await postcomment.save();
@@ -49,6 +72,63 @@ export const editcomment = async (req, res) => {
     res.status(200).json(updatecomment);
   } catch (error) {
     console.error(" error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+export const likeComment = async (req, res) => {
+  const { id: _id } = req.params;
+  const { userid } = req.body;
+  if (!mongoose.Types.ObjectId.isValid(_id)) return res.status(404).send("Comment unavailable");
+  try {
+    const c = await comment.findById(_id);
+    if (!c) return res.status(404).send("Comment not found");
+    if (!c.likes.includes(userid)) {
+      c.likes.push(userid);
+      c.dislikes = c.dislikes.filter((id) => String(id) !== String(userid)); // Remove from dislikes if exists
+      await c.save();
+    }
+    return res.status(200).json(c);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+export const dislikeComment = async (req, res) => {
+  const { id: _id } = req.params;
+  const { userid } = req.body;
+  if (!mongoose.Types.ObjectId.isValid(_id)) return res.status(404).send("Comment unavailable");
+  try {
+    const c = await comment.findById(_id);
+    if (!c) return res.status(404).send("Comment not found");
+    if (!c.dislikes.includes(userid)) {
+      c.dislikes.push(userid);
+      c.likes = c.likes.filter((id) => String(id) !== String(userid)); // Remove from likes if exists
+      await c.save();
+    }
+    return res.status(200).json(c);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+export const reportComment = async (req, res) => {
+  const { id: _id } = req.params;
+  const { userid } = req.body;
+  if (!mongoose.Types.ObjectId.isValid(_id)) return res.status(404).send("Comment unavailable");
+  try {
+    const c = await comment.findById(_id);
+    if (!c) return res.status(404).send("Comment not found");
+    if (!c.reports.includes(userid)) {
+      c.reports.push(userid);
+      c.status = "flagged_for_review";
+      await c.save();
+    }
+    return res.status(200).json(c);
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };

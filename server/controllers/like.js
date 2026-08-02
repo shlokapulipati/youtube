@@ -40,3 +40,14 @@ export const getallLikedVideo = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+export const checkLike = async (req, res) => {
+  const { userId, videoId } = req.body;
+  if (!userId || !videoId) return res.status(200).json({ liked: false });
+  try {
+    const existing = await like.findOne({ viewer: userId, videoid: videoId });
+    return res.status(200).json({ liked: !!existing });
+  } catch (error) {
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};

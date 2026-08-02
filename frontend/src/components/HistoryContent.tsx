@@ -47,7 +47,7 @@ export default function HistoryContent() {
   const handleRemoveFromHistory = async (historyId: string) => {
     try {
       console.log("Removing from history:", historyId);
-
+      await axiosInstance.delete(`/history/remove/${historyId}`);
       setHistory(history.filter((item) => item._id !== historyId));
     } catch (error) {
       console.error("Error removing from history:", error);
@@ -85,7 +85,9 @@ export default function HistoryContent() {
       </div>
 
       <div className="space-y-4">
-        {history.map((item) => (
+        {history.map((item) => {
+          if (!item.videoid) return null;
+          return (
           <div key={item._id} className="flex gap-4 group">
             <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
               <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
@@ -134,7 +136,7 @@ export default function HistoryContent() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        ))}
+        )})}
       </div>
     </div>
   );

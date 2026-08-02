@@ -43,12 +43,14 @@ export default function WatchLaterContent() {
   if (loading) {
     return <div>Loading watch later...</div>;
   }
-  const handleRemoveFromWatchLater = async (watchLaterId: string) => {
+  const handleRemoveFromWatchLater = async (watchLaterId: string, videoId: string) => {
+    if (!user) return;
     try {
-      console.log("Removing from history:", watchLaterId);
+      console.log("Removing from watch later:", watchLaterId);
+      await axiosInstance.post(`/watch/${videoId}`, { userId: user._id });
       setWatchLater(watchLater.filter((item) => item._id !== watchLaterId));
     } catch (error) {
-      console.error("Error removing from history:", error);
+      console.error("Error removing from watch later:", error);
     }
   };
 
@@ -87,7 +89,9 @@ export default function WatchLaterContent() {
       </div>
 
       <div className="space-y-4">
-        {watchLater.map((item) => (
+        {watchLater.map((item) => {
+          if (!item.videoid) return null;
+          return (
           <div key={item._id} className="flex gap-4 group">
             <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
               <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
@@ -128,7 +132,7 @@ export default function WatchLaterContent() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => handleRemoveFromWatchLater(item._id)}
+                  onClick={() => handleRemoveFromWatchLater(item._id, item.videoid._id)}
                 >
                   <X className="w-4 h-4 mr-2" />
                   Remove from Watch later
@@ -136,7 +140,7 @@ export default function WatchLaterContent() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        ))}
+        )})}
       </div>
     </div>
   );
