@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import axiosInstance from "@/lib/axiosinstance";
+
 const SearchResult = ({ query }: any) => {
   if (!query.trim()) {
     return (
@@ -14,40 +16,19 @@ const SearchResult = ({ query }: any) => {
   }
   const [video, setvideos] = useState<any>(null);
   const videos = async () => {
-    const allVideos = [
-      {
-        _id: "1",
-        videotitle: "Amazing Nature Documentary",
-        filename: "nature-doc.mp4",
-        filetype: "video/mp4",
-        filepath: "/videos/nature-doc.mp4",
-        filesize: "500MB",
-        videochanel: "Nature Channel",
-        Like: 1250,
-        views: 45000,
-        uploader: "nature_lover",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        _id: "2",
-        videotitle: "Cooking Tutorial: Perfect Pasta",
-        filename: "pasta-tutorial.mp4",
-        filetype: "video/mp4",
-        filepath: "/videos/pasta-tutorial.mp4",
-        filesize: "300MB",
-        videochanel: "Chef's Kitchen",
-        Like: 890,
-        views: 23000,
-        uploader: "chef_master",
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ];
-    let results = allVideos.filter(
-      (vid) =>
-        vid.videotitle.toLowerCase().includes(query.toLowerCase()) ||
-        vid.videochanel.toLowerCase().includes(query.toLowerCase())
-    );
-    setvideos(results);
+    try {
+      const response = await axiosInstance.get("/video/getall");
+      const allVideos = response.data || [];
+      let results = allVideos.filter(
+        (vid: any) =>
+          vid?.videotitle?.toLowerCase().includes(query.toLowerCase()) ||
+          vid?.videochanel?.toLowerCase().includes(query.toLowerCase())
+      );
+      setvideos(results);
+    } catch (err) {
+      console.error(err);
+      setvideos([]);
+    }
   };
   useEffect(() => {
     videos();
@@ -73,19 +54,30 @@ const SearchResult = ({ query }: any) => {
       </div>
     );
   }
-  const vids = "/video/vdo.mp4";
   return (
     <div className="space-y-6">
       {/* Video Results */}
       {video.length > 0 && (
         <div className="space-y-4">
-          {video.map((video: any) => (
+          {video.map((video: any) => {
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+            const normalizedPath = video?.filepath?.replace(/\\/g, '/');
+            let videoSrc = video?.filepath?.startsWith("http")
+              ? video.filepath
+              : (video?.filepath?.startsWith("/video/")
+                  ? video.filepath
+                  : `${backendUrl}/${normalizedPath}`);
+            if (videoSrc && !videoSrc.includes('#t=')) {
+              videoSrc += '#t=0.1';
+            }
+            return (
             <div key={video._id} className="flex gap-4 group">
               <Link href={`/watch/${video._id}`} className="flex-shrink-0">
                 <div className="relative w-80 aspect-video bg-gray-100 rounded-lg overflow-hidden">
                   <video
-                    src={vids}
-                    className="object-cover group-hover:scale-105 transition-transform duration-200"
+                    src={videoSrc}
+                    className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
+                    preload="metadata"
                   />
                   <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded">
                     10:24
@@ -130,7 +122,8 @@ const SearchResult = ({ query }: any) => {
                 </p>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
