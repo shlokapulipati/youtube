@@ -31,8 +31,8 @@ export default function LikedVideosContent() {
 
     try {
       const likedData = await axiosInstance.get(`/like/${user?._id}`);
-
-      setLikedVideos(likedData.data);
+      const validVideos = (likedData.data || []).filter((item: any) => item.videoid != null);
+      setLikedVideos(validVideos);
     } catch (error) {
       console.error("Error loading liked videos:", error);
     } finally {
@@ -89,13 +89,26 @@ export default function LikedVideosContent() {
       </div>
 
       <div className="space-y-4">
-        {likedVideos.map((item) => (
+        {likedVideos.map((item) => {
+          if (!item.videoid) return null;
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+          const normalizedPath = item.videoid.filepath?.replace(/\\/g, '/');
+          let videoSrc = item.videoid.filepath?.startsWith("http") 
+            ? item.videoid.filepath 
+            : (item.videoid.filepath?.startsWith("/video/") 
+                ? item.videoid.filepath 
+                : `${backendUrl}/${normalizedPath}`);
+          if (videoSrc && !videoSrc.includes('#t=')) {
+            videoSrc += '#t=0.1';
+          }
+          return (
           <div key={item._id} className="flex gap-4 group">
             <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
               <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
                 <video
-                  src={`${process.env.BACKEND_URL}/${item.videoid?.filepath}`}
+                  src={videoSrc}
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
+                  preload="metadata"
                 />
               </div>
             </Link>
@@ -138,7 +151,7 @@ export default function LikedVideosContent() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        ))}
+        )})}
       </div>
     </div>
   );

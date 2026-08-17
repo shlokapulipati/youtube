@@ -11,6 +11,11 @@ const likeschema = mongoose.Schema(
       ref: "videofiles",
       required: true,
     },
+    action: {
+      type: String,
+      enum: ['like', 'dislike'],
+      default: 'like',
+    },
     likedon: { type: Date, default: Date.now },
   },
   {

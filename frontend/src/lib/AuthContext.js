@@ -9,6 +9,7 @@ const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [otpState, setOtpState] = useState(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -31,6 +32,7 @@ export const UserProvider = ({ children }) => {
   };
   const logout = async () => {
     setUser(null);
+    setOtpState(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem("user");
     }
@@ -50,7 +52,16 @@ export const UserProvider = ({ children }) => {
         image: firebaseuser.photoURL || "https://github.com/shadcn.png",
       };
       const response = await axiosInstance.post("/user/login", payload);
-      login(response.data.result);
+      
+      if (response.data.otpRequired) {
+        setOtpState({
+          required: true,
+          userId: response.data.userId,
+          pendingDevice: response.data.pendingDevice
+        });
+      } else {
+        login(response.data.result);
+      }
     } catch (error) {
       console.error(error);
     }
@@ -65,7 +76,15 @@ export const UserProvider = ({ children }) => {
             image: firebaseuser.photoURL || "https://github.com/shadcn.png",
           };
           const response = await axiosInstance.post("/user/login", payload);
-          login(response.data.result);
+          if (response.data.otpRequired) {
+            setOtpState({
+              required: true,
+              userId: response.data.userId,
+              pendingDevice: response.data.pendingDevice
+            });
+          } else {
+            login(response.data.result);
+          }
         } catch (error) {
           console.error(error);
           logout();
@@ -75,8 +94,69 @@ export const UserProvider = ({ children }) => {
     return () => unsubcribe();
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      let appliedTheme = user?.theme || 'auto';
+      
+      if (appliedTheme === 'auto') {
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const istTime = new Date(utc + (3600000 * 5.5));
+        const hours = istTime.getHours();
+        
+        // 10:00 AM to 12:00 PM IST is hours 10 and 11
+        if (hours >= 10 && hours < 12) {
+          appliedTheme = 'light';
+        } else {
+          appliedTheme = 'dark';
+        }
+      }
+
+      if (appliedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, [user?.theme]);
+
+  const updateTheme = async (newTheme) => {
+    if (!user) return;
+    try {
+      const res = await axiosInstance.patch(`/user/theme/${user._id}`, { theme: newTheme });
+      login(res.data);
+    } catch (e) {
+      console.error("Theme update error:", e);
+    }
+  };
+
+  const submitOtp = async (otp) => {
+    if (!otpState) return false;
+    try {
+      const res = await axiosInstance.post("/user/verify-otp", {
+        userId: otpState.userId,
+        otp,
+        pendingDevice: otpState.pendingDevice
+      });
+      setOtpState(null);
+      login(res.data.result);
+      return true;
+    } catch (e) {
+      console.error("OTP verification failed:", e);
+      return false;
+    }
+  };
+
+  const cancelOtp = () => {
+    setOtpState(null);
+    signOut(auth);
+  };
+
   return (
-    <UserContext.Provider value={{ user, login, logout, handlegooglesignin }}>
+    <UserContext.Provider value={{ 
+      user, login, logout, handlegooglesignin, 
+      otpState, submitOtp, cancelOtp, updateTheme 
+    }}>
       {children}
     </UserContext.Provider>
   );

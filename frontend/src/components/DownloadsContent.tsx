@@ -28,7 +28,8 @@ export default function DownloadsContent() {
   const loadDownloads = async () => {
     try {
       const res = await axiosInstance.get(`/download/${user?._id}`);
-      setDownloads(res.data);
+      const validVideos = (res.data || []).filter((item: any) => item.videoid != null);
+      setDownloads(validVideos);
     } catch (error) {
       console.error("Error loading downloads:", error);
     } finally {
@@ -77,19 +78,39 @@ export default function DownloadsContent() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-gray-600">{downloads.length} downloaded videos</p>
-        <p className="text-sm font-medium text-blue-600">Plan: {user.plan || "Free"}</p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm font-medium text-blue-600">Plan: {user.plan || "Free"}</p>
+          {user.plan !== "Gold" && (
+            <Link href="/pricing">
+              <Button size="sm" variant="outline" className="text-xs h-7">
+                Upgrade
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">
         {downloads.map((item) => {
           if (!item.videoid) return null;
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+          const normalizedPath = item.videoid.filepath?.replace(/\\/g, '/');
+          let videoSrc = item.videoid.filepath?.startsWith("http") 
+            ? item.videoid.filepath 
+            : (item.videoid.filepath?.startsWith("/video/") 
+                ? item.videoid.filepath 
+                : `${backendUrl}/${normalizedPath}`);
+          if (videoSrc && !videoSrc.includes('#t=')) {
+            videoSrc += '#t=0.1';
+          }
           return (
           <div key={item._id} className="flex gap-4 group">
             <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
               <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
                 <video
-                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000'}/${item.videoid?.filepath}`}
+                  src={videoSrc}
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
+                  preload="metadata"
                 />
               </div>
             </Link>

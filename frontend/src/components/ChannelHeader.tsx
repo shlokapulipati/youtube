@@ -1,9 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
+import axiosInstance from "@/lib/axiosinstance";
+import { toast } from "sonner";
 
 const ChannelHeader = ({ channel, user }: any) => {
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subCount, setSubCount] = useState(0);
+
+  useEffect(() => {
+    const fetchSubData = async () => {
+      if (!channel?.channelname) return;
+      try {
+        const countRes = await axiosInstance.get(`/subscribe/count/${channel.channelname}`);
+        setSubCount(countRes.data.count);
+
+        if (user) {
+          const checkRes = await axiosInstance.post("/subscribe/check", {
+            userId: user._id,
+            channelName: channel.channelname
+          });
+          setIsSubscribed(checkRes.data.subscribed);
+        }
+      } catch (err) {
+        console.error("Error fetching subscribe data", err);
+      }
+    };
+    fetchSubData();
+  }, [channel, user]);
+
+  const handleSubscribe = async () => {
+    if (!user) {
+      toast.error("Please sign in to subscribe");
+      return;
+    }
+    try {
+      const res = await axiosInstance.post("/subscribe", {
+        userId: user._id,
+        channelName: channel.channelname
+      });
+      setIsSubscribed(res.data.subscribed);
+      setSubCount(prev => res.data.subscribed ? prev + 1 : prev - 1);
+      toast.success(res.data.subscribed ? "Subscribed!" : "Unsubscribed");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update subscription");
+    }
+  };
   return (
     <div className="w-full">
       {/* Banner */}
@@ -22,6 +65,7 @@ const ChannelHeader = ({ channel, user }: any) => {
             <h1 className="text-2xl md:text-4xl font-bold">{channel?.channelname}</h1>
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               <span>@{channel?.channelname.toLowerCase().replace(/\s+/g, "")}</span>
+              <span>{subCount} subscribers</span>
             </div>
             {channel?.description && (
               <p className="text-sm text-gray-700 max-w-2xl">
@@ -33,10 +77,10 @@ const ChannelHeader = ({ channel, user }: any) => {
           {user && user?._id !== channel?._id && (
             <div className="flex gap-2">
               <Button
-                onClick={() => setIsSubscribed(!isSubscribed)}
+                onClick={handleSubscribe}
                 variant={isSubscribed ? "outline" : "default"}
                 className={
-                  isSubscribed ? "bg-gray-100" : "bg-red-600 hover:bg-red-700"
+                  isSubscribed ? "bg-gray-100" : "bg-red-600 hover:bg-red-700 text-white"
                 }
               >
                 {isSubscribed ? "Subscribed" : "Subscribe"}

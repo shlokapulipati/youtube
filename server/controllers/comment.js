@@ -1,7 +1,7 @@
 import comment from "../Modals/comment.js";
 import mongoose from "mongoose";
 
-const BAD_WORDS = ["spam", "abuse", "fake", "scam"];
+const BAD_WORDS = ["spam", "abuse", "fake", "scam", "stupid", "idiot", "badword", "hate", "motherfucker", "bitch", "fuck", "shit"];
 
 const detectSpamOrAbuse = (text) => {
   if (!text) return null;
@@ -83,7 +83,7 @@ export const likeComment = async (req, res) => {
   try {
     const c = await comment.findById(_id);
     if (!c) return res.status(404).send("Comment not found");
-    if (!c.likes.includes(userid)) {
+    if (!c.likes.some((id) => String(id) === String(userid))) {
       c.likes.push(userid);
       c.dislikes = c.dislikes.filter((id) => String(id) !== String(userid)); // Remove from dislikes if exists
       await c.save();
@@ -102,7 +102,7 @@ export const dislikeComment = async (req, res) => {
   try {
     const c = await comment.findById(_id);
     if (!c) return res.status(404).send("Comment not found");
-    if (!c.dislikes.includes(userid)) {
+    if (!c.dislikes.some((id) => String(id) === String(userid))) {
       c.dislikes.push(userid);
       c.likes = c.likes.filter((id) => String(id) !== String(userid)); // Remove from likes if exists
       await c.save();
@@ -121,7 +121,7 @@ export const reportComment = async (req, res) => {
   try {
     const c = await comment.findById(_id);
     if (!c) return res.status(404).send("Comment not found");
-    if (!c.reports.includes(userid)) {
+    if (!c.reports.some((id) => String(id) === String(userid))) {
       c.reports.push(userid);
       c.status = "flagged_for_review";
       await c.save();

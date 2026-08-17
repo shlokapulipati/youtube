@@ -20,8 +20,15 @@ export const requestDownload = async (req, res) => {
       downloadedAt: { $gte: startOfDay }
     });
 
-    if (user.plan === "Free" && downloadsToday >= 1) {
-      return res.status(403).json({ message: "Free users can only download 1 video per day. Please upgrade to Premium." });
+    let limit = 1;
+    if (user.plan === "Bronze") limit = 5;
+    else if (user.plan === "Silver") limit = 10;
+    else if (user.plan === "Gold") limit = Infinity; // Unlimited
+
+    if (downloadsToday >= limit) {
+      return res.status(403).json({ 
+        message: `${user.plan} users can only download ${limit} videos per day. Please upgrade your plan.` 
+      });
     }
     
     const alreadyDownloaded = await download.findOne({ userid, videoid });

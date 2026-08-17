@@ -24,7 +24,7 @@ interface Comment {
   translatedText?: string;
 }
 
-const BAD_WORDS = ["spam", "abuse", "fake", "scam"]; 
+const BAD_WORDS = ["spam", "abuse", "fake", "scam", "stupid", "idiot", "badword", "hate", "motherfucker", "bitch", "fuck", "shit"]; 
 
 const detectSpamOrAbuse = (text: string) => {
   const lowerText = text.toLowerCase();
@@ -109,9 +109,9 @@ const Comments = ({ videoId }: { videoId: string }) => {
     }
 
     try {
-      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=Autodetect|en`);
+      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`);
       const data = await res.json();
-      const translated = data.responseData.translatedText;
+      const translated = data[0]?.[0]?.[0] || text;
       
       setComments(comments.map(c => c._id === commentId ? { 
         ...c, 

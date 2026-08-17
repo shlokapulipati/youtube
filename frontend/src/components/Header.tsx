@@ -1,4 +1,4 @@
-import { Bell, Menu, Mic, Search, User, VideoIcon } from "lucide-react";
+import { Bell, Menu, Mic, Search, User, VideoIcon, Sun, Moon, Monitor } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -10,13 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import Channeldialogue from "./channeldialogue";
 import { useRouter } from "next/router";
 import { useUser } from "@/lib/AuthContext";
 
 const Header = () => {
-  const { user, logout, handlegooglesignin } = useUser();
+  const { user, logout, handlegooglesignin, otpState, submitOtp, cancelOtp, updateTheme } = (useUser as any)();
+  const [otp, setOtp] = useState("");
   // const user: any = {
   //   id: "1",
   //   name: "John Doe",
@@ -38,7 +40,7 @@ const Header = () => {
     }
   };
   return (
-    <header className="flex items-center justify-between px-4 py-2 bg-white border-b">
+    <header className="flex items-center justify-between px-4 py-2 bg-background border-b-0">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon">
           <Menu className="w-6 h-6" />
@@ -68,7 +70,7 @@ const Header = () => {
           />
           <Button
             type="submit"
-            className="rounded-r-full px-6 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-l-0"
+            className="rounded-r-full px-6 bg-secondary hover:bg-secondary/80 text-muted-foreground border border-l-0 border-border"
           >
             <Search className="w-5 h-5" />
           </Button>
@@ -86,6 +88,18 @@ const Header = () => {
             <Button variant="ghost" size="icon">
               <Bell className="w-6 h-6" />
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  {user?.theme === 'dark' ? <Moon className="w-5 h-5" /> : user?.theme === 'light' ? <Sun className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => updateTheme('light')}><Sun className="w-4 h-4 mr-2" /> Light</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateTheme('dark')}><Moon className="w-4 h-4 mr-2" /> Dark</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateTheme('auto')}><Monitor className="w-4 h-4 mr-2" /> Auto (IST Time)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -146,6 +160,31 @@ const Header = () => {
         onclose={() => setisdialogeopen(false)}
         mode="create"
       />
+      <Dialog open={!!otpState?.required} onOpenChange={(open) => { if (!open && cancelOtp) cancelOtp() }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>OTP Verification</DialogTitle>
+            <DialogDescription>
+              You are logging in from a new device or location. Please enter the 6-digit OTP sent to your email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <Input
+              placeholder="Enter 6-digit OTP"
+              value={otp}
+              onChange={e => setOtp(e.target.value)}
+              maxLength={6}
+            />
+            <Button onClick={async () => {
+              if (submitOtp) {
+                const success = await submitOtp(otp);
+                if (success) setOtp('');
+                else alert('Invalid or expired OTP');
+              }
+            }} className="w-full">Verify & Login</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 };

@@ -5,8 +5,14 @@ export const handlehistory = async (req, res) => {
   const { userId } = req.body;
   const { videoId } = req.params;
   try {
-    await history.create({ viewer: userId, videoid: videoId });
-    await video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
+    const existingHistory = await history.findOne({ viewer: userId, videoid: videoId });
+    if (!existingHistory) {
+      await history.create({ viewer: userId, videoid: videoId });
+      await video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
+    } else {
+      existingHistory.updatedAt = new Date();
+      await existingHistory.save();
+    }
     return res.status(200).json({ history: true });
   } catch (error) {
     console.error(" error:", error);
@@ -31,6 +37,7 @@ export const getallhistoryVideo = async (req, res) => {
         path: "videoid",
         model: "videofiles",
       })
+      .sort({ updatedAt: -1 })
       .exec();
     return res.status(200).json(historyvideo);
   } catch (error) {

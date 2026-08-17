@@ -5,13 +5,25 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 
 const videos = "/video/vdo.mp4";
 export default function VideoCard({ video }: any) {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  const normalizedPath = video?.filepath?.replace(/\\/g, '/');
+  let videoSrc = video?.filepath?.startsWith("http") 
+    ? video.filepath 
+    : (video?.filepath?.startsWith("/video/") 
+        ? video.filepath 
+        : `${backendUrl}/${normalizedPath}`);
+  if (videoSrc && !videoSrc.includes('#t=')) {
+    videoSrc += '#t=0.1';
+  }
+
   return (
     <Link href={`/watch/${video?._id}`} className="group">
       <div className="space-y-3">
-        <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
+        <div className="relative aspect-video rounded-lg overflow-hidden bg-secondary">
           <video
-            src={video?.filepath?.startsWith("/video/") ? video.filepath : `${process.env.BACKEND_URL}/${video?.filepath}`}
+            src={videoSrc}
             className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
+            preload="metadata"
           />
           <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded">
             10:24

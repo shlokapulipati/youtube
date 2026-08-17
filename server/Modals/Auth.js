@@ -6,7 +6,18 @@ const userschema = mongoose.Schema({
   description: { type: String },
   image: { type: String },
   joinedon: { type: Date, default: Date.now },
-  plan: { type: String, enum: ["Free", "Premium"], default: "Free" },
+  plan: { type: String, enum: ["Free", "Bronze", "Silver", "Gold"], default: "Free" },
+  theme: { type: String, enum: ["auto", "light", "dark"], default: "auto" },
+  knownDevices: [
+    {
+      userAgent: { type: String },
+      city: { type: String },
+      state: { type: String },
+      lastLogin: { type: Date, default: Date.now }
+    }
+  ],
+  otp: { type: String },
+  otpExpires: { type: Date }
 });
 
 export default mongoose.model("user", userschema);

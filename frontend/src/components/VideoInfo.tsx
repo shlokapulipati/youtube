@@ -41,6 +41,7 @@ const VideoInfo = ({ video }: any) => {
             axiosInstance.post('/watch/check', { userId: user._id, videoId: video._id })
           ]);
           setIsLiked(likeRes.data.liked);
+          setIsDisliked(likeRes.data.disliked);
           setIsWatchLater(watchRes.data.watchlater);
         } catch (error) {
           console.error("Failed to check status", error);
@@ -72,22 +73,28 @@ const VideoInfo = ({ video }: any) => {
     handleviews();
   }, [user]);
   const handleLike = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to like videos");
+      return;
+    }
     try {
       const res = await axiosInstance.post(`/like/${video._id}`, {
         userId: user?._id,
+        action: 'like'
       });
       if (res.status === 200) {
-        if (res.data.liked) {
+        const { status } = res.data;
+        if (status === 'added') {
           setlikes((prev: any) => prev + 1);
           setIsLiked(true);
-          if (isDisliked) {
-            setDislikes((prev: any) => prev - 1);
-            setIsDisliked(false);
-          }
-        } else {
+        } else if (status === 'removed') {
           setlikes((prev: any) => prev - 1);
           setIsLiked(false);
+        } else if (status === 'switched') {
+          setlikes((prev: any) => prev + 1);
+          setDislikes((prev: any) => prev - 1);
+          setIsLiked(true);
+          setIsDisliked(false);
         }
       }
     } catch (error) {
@@ -95,22 +102,54 @@ const VideoInfo = ({ video }: any) => {
     }
   };
   const handleWatchLater = async () => {
+    if (!user) {
+      toast.error("Please sign in to save videos");
+      return;
+    }
     try {
       const res = await axiosInstance.post(`/watch/${video._id}`, {
         userId: user?._id,
       });
-      if (res.data.watchlater) {
-        setIsWatchLater(!isWatchLater);
-      } else {
-        setIsWatchLater(false);
+      setIsWatchLater(res.data.watchlater);
+      toast.success(res.data.watchlater ? "Added to Watch Later" : "Removed from Watch Later");
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to update Watch Later");
+    }
+  };
+  const handleDislike = async () => {
+    if (!user) {
+      toast.error("Please sign in to dislike videos");
+      return;
+    }
+    try {
+      const res = await axiosInstance.post(`/like/${video._id}`, {
+        userId: user?._id,
+        action: 'dislike'
+      });
+      if (res.status === 200) {
+        const { status } = res.data;
+        if (status === 'added') {
+          setDislikes((prev: any) => prev + 1);
+          setIsDisliked(true);
+        } else if (status === 'removed') {
+          setDislikes((prev: any) => prev - 1);
+          setIsDisliked(false);
+        } else if (status === 'switched') {
+          setDislikes((prev: any) => prev + 1);
+          setlikes((prev: any) => prev - 1);
+          setIsDisliked(true);
+          setIsLiked(false);
+        }
       }
     } catch (error) {
       console.log(error);
     }
   };
-  const handleDislike = async () => {
-    if (!user) return;
-    toast.error("Dislike is not fully implemented on the backend yet");
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copied to clipboard!");
   };
 
   const handleDownload = async () => {
@@ -190,6 +229,7 @@ const VideoInfo = ({ video }: any) => {
             variant="ghost"
             size="sm"
             className="bg-gray-100 rounded-full"
+            onClick={handleShare}
           >
             <Share className="w-5 h-5 mr-2" />
             Share

@@ -15,17 +15,29 @@ const vid = "/video/vdo.mp4";
 export default function RelatedVideos({ videos }: RelatedVideosProps) {
   return (
     <div className="space-y-2">
-      {videos.map((video) => (
-        <Link
-          key={video._id}
-          href={`/watch/${video._id}`}
-          className="flex gap-2 group"
-        >
-          <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden flex-shrink-0">
-            <video
-              src={(video as any)?.filepath?.startsWith("/video/") ? (video as any).filepath : `${process.env.BACKEND_URL}/${(video as any)?.filepath}`}
-              className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
-            />
+      {videos.map((video) => {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        const normalizedPath = (video as any)?.filepath?.replace(/\\/g, '/');
+        let videoSrc = (video as any)?.filepath?.startsWith("http") 
+          ? (video as any).filepath 
+          : ((video as any)?.filepath?.startsWith("/video/") 
+              ? (video as any).filepath 
+              : `${backendUrl}/${normalizedPath}`);
+        if (videoSrc && !videoSrc.includes('#t=')) {
+          videoSrc += '#t=0.1';
+        }
+        return (
+          <Link
+            key={video._id}
+            href={`/watch/${video._id}`}
+            className="flex gap-2 group"
+          >
+            <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden flex-shrink-0">
+              <video
+                src={videoSrc}
+                className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
+                preload="metadata"
+              />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600">
@@ -37,8 +49,9 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
               {formatDistanceToNow(new Date(video.createdAt))} ago
             </p>
           </div>
-        </Link>
-      ))}
+          </Link>
+        );
+      })}
     </div>
   );
 }
