@@ -16,7 +16,7 @@ import Channeldialogue from "./channeldialogue";
 import { useRouter } from "next/router";
 import { useUser } from "@/lib/AuthContext";
 
-const Header = () => {
+const Header = ({ toggleSidebar }: { toggleSidebar?: () => void }) => {
   const { user, logout, handlegooglesignin, otpState, submitOtp, cancelOtp, updateTheme } = (useUser as any)();
   const [otp, setOtp] = useState("");
   // const user: any = {
@@ -42,7 +42,7 @@ const Header = () => {
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-background border-b-0">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar}>
           <Menu className="w-6 h-6" />
         </Button>
         <Link href="/" className="flex items-center gap-1">
