@@ -1,5 +1,6 @@
 import video from "../Modals/video.js";
 import history from "../Modals/history.js";
+import mongoose from "mongoose";
 
 export const handlehistory = async (req, res) => {
   const { userId } = req.body;
@@ -8,7 +9,9 @@ export const handlehistory = async (req, res) => {
     const existingHistory = await history.findOne({ viewer: userId, videoid: videoId });
     if (!existingHistory) {
       await history.create({ viewer: userId, videoid: videoId });
-      await video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
+      if (mongoose.Types.ObjectId.isValid(videoId)) {
+         await video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
+      }
     } else {
       existingHistory.updatedAt = new Date();
       await existingHistory.save();
@@ -22,7 +25,9 @@ export const handlehistory = async (req, res) => {
 export const handleview = async (req, res) => {
   const { videoId } = req.params;
   try {
-    await video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
+    if (mongoose.Types.ObjectId.isValid(videoId)) {
+       await video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
+    }
   } catch (error) {
     console.error(" error:", error);
     return res.status(500).json({ message: "Something went wrong" });

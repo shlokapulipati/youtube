@@ -11,6 +11,7 @@ import {
   SkipForward,
   Loader2
 } from "lucide-react";
+import ReactPlayer from "react-player";
 
 interface VideoPlayerProps {
   video: {
@@ -31,7 +32,7 @@ const formatTime = (timeInSeconds: number) => {
 };
 
 export default function VideoPlayer({ video, onNext, externalSyncState, onPlayPauseSync }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -69,68 +70,57 @@ export default function VideoPlayer({ video, onNext, externalSyncState, onPlayPa
     };
   }, []);
 
-  const handleTimeUpdate = () => {
-    if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
+  const handleTimeUpdate = (state: { playedSeconds: number }) => {
+    setCurrentTime(state.playedSeconds);
   };
 
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) setDuration(videoRef.current.duration);
+  const handleLoadedMetadata = (dur: number) => {
+    setDuration(dur);
   };
 
   const togglePlay = useCallback((e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      videoRef.current.pause();
-      if (onPlayPauseSync) onPlayPauseSync(false, videoRef.current.currentTime);
-    } else {
-      videoRef.current.play();
-      if (onPlayPauseSync) onPlayPauseSync(true, videoRef.current.currentTime);
-    }
-  }, [isPlaying, onPlayPauseSync]);
+    setIsPlaying(prev => {
+      const nextPlayState = !prev;
+      if (onPlayPauseSync) {
+        onPlayPauseSync(nextPlayState, currentTime);
+      }
+      return nextPlayState;
+    });
+  }, [onPlayPauseSync, currentTime]);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
-      setIsMuted(newVolume === 0);
-    }
+    setIsMuted(newVolume === 0);
   };
 
   const toggleMute = () => {
-    if (!videoRef.current) return;
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
-    videoRef.current.muted = newMutedState;
     if (!newMutedState && volume === 0) {
       setVolume(1);
-      videoRef.current.volume = 1;
     }
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
     setCurrentTime(time);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
+    if (playerRef.current) {
+      playerRef.current.seekTo(time, "seconds");
       if (onPlayPauseSync) onPlayPauseSync(isPlaying, time);
     }
   };
 
   useEffect(() => {
-    if (externalSyncState && videoRef.current) {
-      const timeDiff = Math.abs(videoRef.current.currentTime - externalSyncState.time);
+    if (externalSyncState && playerRef.current) {
+      const timeDiff = Math.abs(currentTime - externalSyncState.time);
       if (timeDiff > 2) {
-        videoRef.current.currentTime = externalSyncState.time;
+        playerRef.current.seekTo(externalSyncState.time, "seconds");
       }
-      if (externalSyncState.isPlaying && videoRef.current.paused) {
-        videoRef.current.play().catch(e => console.log(e));
-      } else if (!externalSyncState.isPlaying && !videoRef.current.paused) {
-        videoRef.current.pause();
-      }
+      setIsPlaying(externalSyncState.isPlaying);
     }
-  }, [externalSyncState]);
+  }, [externalSyncState, currentTime]);
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
@@ -162,24 +152,22 @@ export default function VideoPlayer({ video, onNext, externalSyncState, onPlayPa
           togglePlay();
           break;
         case "ArrowRight":
-          if (videoRef.current) videoRef.current.currentTime = Math.min(videoRef.current.currentTime + 10, duration);
+          if (playerRef.current) {
+             const newTime = Math.min(currentTime + 10, duration);
+             playerRef.current.seekTo(newTime, "seconds");
+          }
           break;
         case "ArrowLeft":
-          if (videoRef.current) videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 10, 0);
+          if (playerRef.current) {
+             const newTime = Math.max(currentTime - 10, 0);
+             playerRef.current.seekTo(newTime, "seconds");
+          }
           break;
         case "ArrowUp":
-          setVolume(prev => {
-            const next = Math.min(prev + 0.1, 1);
-            if(videoRef.current) videoRef.current.volume = next;
-            return next;
-          });
+          setVolume(prev => Math.min(prev + 0.1, 1));
           break;
         case "ArrowDown":
-          setVolume(prev => {
-            const next = Math.max(prev - 0.1, 0);
-            if(videoRef.current) videoRef.current.volume = next;
-            return next;
-          });
+          setVolume(prev => Math.max(prev - 0.1, 0));
           break;
         case "f":
         case "F":
@@ -201,8 +189,8 @@ export default function VideoPlayer({ video, onNext, externalSyncState, onPlayPa
     e.stopPropagation();
     const now = Date.now();
     if (now - lastTapLeft < 300) {
-      if (videoRef.current) {
-        videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 10, 0);
+      if (playerRef.current) {
+        playerRef.current.seekTo(Math.max(currentTime - 10, 0), "seconds");
       }
       setDoubleTapFeedback("left");
       setTimeout(() => setDoubleTapFeedback(null), 500);
@@ -218,8 +206,8 @@ export default function VideoPlayer({ video, onNext, externalSyncState, onPlayPa
     e.stopPropagation();
     const now = Date.now();
     if (now - lastTapRight < 300) {
-      if (videoRef.current) {
-        videoRef.current.currentTime = Math.min(videoRef.current.currentTime + 10, duration);
+      if (playerRef.current) {
+        playerRef.current.seekTo(Math.min(currentTime + 10, duration), "seconds");
       }
       setDoubleTapFeedback("right");
       setTimeout(() => setDoubleTapFeedback(null), 500);
@@ -232,17 +220,11 @@ export default function VideoPlayer({ video, onNext, externalSyncState, onPlayPa
   };
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-  const normalizedPath = video?.filepath?.replace(/\\/g, '/');
-  
-  let videoSrc = video?.filepath?.startsWith("http") 
-    ? video.filepath 
-    : (video?.filepath?.startsWith("/video/") 
+  const mediaUrl = video?.filepath 
+    ? (video.filepath.startsWith("http") || video.filepath.startsWith("/video/") 
         ? video.filepath 
-        : `${backendUrl}/${normalizedPath}`);
-
-  if (videoSrc && !videoSrc.includes('#t=')) {
-    videoSrc += '#t=0.1'; // Force browser to fetch the first frame as the cover page
-  }
+        : `${backendUrl}/${video.filepath.replace(/\\/g, '/')}`)
+    : `https://www.youtube.com/watch?v=${video?._id}`;
 
   return (
     <div 
@@ -253,26 +235,40 @@ export default function VideoPlayer({ video, onNext, externalSyncState, onPlayPa
       onMouseEnter={() => setShowControls(true)}
       onClick={togglePlay}
     >
-      <video
-        key={video?._id}
-        ref={videoRef}
-        className="w-full h-full object-contain focus:outline-none"
-        preload="metadata"
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onWaiting={() => setIsLoading(true)}
-        onPlaying={() => setIsLoading(false)}
-        onEnded={() => {
-          setIsPlaying(false);
-          setShowControls(true);
-        }}
-        playsInline
-      >
-        <source src={videoSrc} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+      <div className="w-full h-full pointer-events-none">
+        <ReactPlayer
+          ref={playerRef}
+          url={mediaUrl}
+          playing={isPlaying}
+          volume={volume}
+          muted={isMuted}
+          width="100%"
+          height="100%"
+          // @ts-ignore
+          onProgress={handleTimeUpdate}
+          onDuration={handleLoadedMetadata}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onBuffer={() => setIsLoading(true)}
+          onBufferEnd={() => setIsLoading(false)}
+          onEnded={() => {
+            setIsPlaying(false);
+            setShowControls(true);
+          }}
+          config={{
+            youtube: {
+              // @ts-ignore
+              playerVars: { 
+                controls: 0, 
+                showinfo: 0, 
+                modestbranding: 1, 
+                rel: 0, 
+                disablekb: 1 
+              }
+            }
+          }}
+        />
+      </div>
 
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">

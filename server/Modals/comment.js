@@ -7,8 +7,7 @@ const commentschema = mongoose.Schema(
       required: true,
     },
     videoid: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "videofiles",
+      type: String,
       required: true,
     },
     commentbody: { type: String },

@@ -15,13 +15,19 @@ import axiosInstance from "@/lib/axiosinstance";
 import { toast } from "sonner";
 
 const VideoInfo = ({ video }: any) => {
-  const [likes, setlikes] = useState(video.Like || 0);
-  const [dislikes, setDislikes] = useState(video.Dislike || 0);
+  const isYouTube = !!video?.snippet;
+  const initialLikes = isYouTube ? parseInt(video.statistics?.likeCount || "0") : (video?.Like || 0);
+  const initialDislikes = isYouTube ? 0 : (video?.Dislike || 0);
+
+  const [likes, setlikes] = useState(initialLikes);
+  const [dislikes, setDislikes] = useState(initialDislikes);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const { user } = useUser();
   const [isWatchLater, setIsWatchLater] = useState(false);
+  const [subscribers, setSubscribers] = useState(0);
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   // const user: any = {
   //   id: "1",
@@ -30,15 +36,16 @@ const VideoInfo = ({ video }: any) => {
   //   image: "https://github.com/shadcn.png?height=32&width=32",
   // };
   useEffect(() => {
-    setlikes(video.Like || 0);
-    setDislikes(video.Dislike || 0);
+    setlikes(isYouTube ? parseInt(video.statistics?.likeCount || "0") : (video.Like || 0));
+    setDislikes(isYouTube ? 0 : (video.Dislike || 0));
     
     const checkStatus = async () => {
-      if (user && video?._id) {
+      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      if (user && videoId) {
         try {
           const [likeRes, watchRes] = await Promise.all([
-            axiosInstance.post('/like/check', { userId: user._id, videoId: video._id }),
-            axiosInstance.post('/watch/check', { userId: user._id, videoId: video._id })
+            axiosInstance.post('/like/check', { userId: user._id, videoId: videoId }),
+            axiosInstance.post('/watch/check', { userId: user._id, videoId: videoId })
           ]);
           setIsLiked(likeRes.data.liked);
           setIsDisliked(likeRes.data.disliked);
@@ -49,14 +56,31 @@ const VideoInfo = ({ video }: any) => {
       }
     };
     
+    const fetchSubData = async () => {
+      const channelTitle = isYouTube ? video.snippet?.channelTitle : video?.videochanel;
+      if (channelTitle) {
+        try {
+          const subCountRes = await axiosInstance.get(`/subscribe/count/${encodeURIComponent(channelTitle)}`);
+          setSubscribers(subCountRes.data.count || 0);
+          
+          if (user) {
+             const subCheckRes = await axiosInstance.post('/subscribe/check', { userId: user._id, channelName: channelTitle });
+             setIsSubscribed(subCheckRes.data.subscribed);
+          }
+        } catch (error) { console.error("Sub fetch failed", error); }
+      }
+    };
+
     checkStatus();
+    fetchSubData();
   }, [video, user]);
 
   useEffect(() => {
     const handleviews = async () => {
+      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
       if (user) {
         try {
-          return await axiosInstance.post(`/history/${video._id}`, {
+          return await axiosInstance.post(`/history/${videoId}`, {
             userId: user?._id,
           });
         } catch (error) {
@@ -64,7 +88,7 @@ const VideoInfo = ({ video }: any) => {
         }
       } else {
         try {
-          return await axiosInstance.post(`/history/views/${video?._id}`);
+          return await axiosInstance.post(`/history/views/${videoId}`);
         } catch (error) {
           return console.log(error);
         }
@@ -78,7 +102,8 @@ const VideoInfo = ({ video }: any) => {
       return;
     }
     try {
-      const res = await axiosInstance.post(`/like/${video._id}`, {
+      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      const res = await axiosInstance.post(`/like/${videoId}`, {
         userId: user?._id,
         action: 'like'
       });
@@ -107,7 +132,8 @@ const VideoInfo = ({ video }: any) => {
       return;
     }
     try {
-      const res = await axiosInstance.post(`/watch/${video._id}`, {
+      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      const res = await axiosInstance.post(`/watch/${videoId}`, {
         userId: user?._id,
       });
       setIsWatchLater(res.data.watchlater);
@@ -123,7 +149,8 @@ const VideoInfo = ({ video }: any) => {
       return;
     }
     try {
-      const res = await axiosInstance.post(`/like/${video._id}`, {
+      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      const res = await axiosInstance.post(`/like/${videoId}`, {
         userId: user?._id,
         action: 'dislike'
       });
@@ -160,29 +187,64 @@ const VideoInfo = ({ video }: any) => {
     
     try {
       toast.loading("Requesting download...", { id: "download" });
+      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
       const res = await axiosInstance.post(`/download/request`, {
         userid: user._id,
-        videoid: video._id
+        videoid: videoId
       });
       toast.success(res.data.message || "Video downloaded successfully", { id: "download" });
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to download video", { id: "download" });
     }
   };
+
+  const handleSubscribe = async () => {
+    if (!user) {
+      toast.error("Please sign in to subscribe");
+      return;
+    }
+    try {
+      const channelTitle = isYouTube ? video.snippet?.channelTitle : video?.videochanel;
+      const res = await axiosInstance.post('/subscribe', { userId: user._id, channelName: channelTitle });
+      if (res.data.subscribed) {
+         setIsSubscribed(true);
+         setSubscribers(prev => prev + 1);
+         toast.success("Subscribed successfully!");
+      } else {
+         setIsSubscribed(false);
+         setSubscribers(prev => prev > 0 ? prev - 1 : 0);
+         toast.success("Unsubscribed.");
+      }
+    } catch (err) {
+      toast.error("Failed to update subscription");
+    }
+  };
+
+  const title = isYouTube ? video.snippet?.title : video?.videotitle;
+  const channelTitle = isYouTube ? video.snippet?.channelTitle : video?.videochanel;
+  const views = isYouTube ? parseInt(video.statistics?.viewCount || "0") : (video?.views || 0);
+  const publishedAt = isYouTube ? video.snippet?.publishedAt || video.snippet?.publishTime : video?.createdAt;
+  const description = isYouTube ? video.snippet?.description : "Sample video description from standard database structures.";
+
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">{video.videotitle}</h1>
+      <h1 className="text-xl font-semibold">{title}</h1>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Avatar className="w-10 h-10">
-            <AvatarFallback>{video.videochanel[0]}</AvatarFallback>
+            <AvatarFallback>{channelTitle?.[0] || 'Y'}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-medium">{video.videochanel}</h3>
-            <p className="text-sm text-gray-600">1.2M subscribers</p>
+            <h3 className="font-medium">{channelTitle}</h3>
+            <p className="text-sm text-gray-600">{subscribers.toLocaleString()} subscribers</p>
           </div>
-          <Button className="ml-4">Subscribe</Button>
+          <Button 
+            className={`ml-4 ${isSubscribed ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' : ''}`}
+            onClick={handleSubscribe}
+          >
+            {isSubscribed ? "Subscribed" : "Subscribe"}
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-gray-100 rounded-full">
@@ -254,13 +316,12 @@ const VideoInfo = ({ video }: any) => {
       </div>
       <div className="bg-gray-100 rounded-lg p-4">
         <div className="flex gap-4 text-sm font-medium mb-2">
-          <span>{video.views.toLocaleString()} views</span>
-          <span>{formatDistanceToNow(new Date(video.createdAt))} ago</span>
+          <span>{views.toLocaleString()} views</span>
+          <span>{publishedAt ? formatDistanceToNow(new Date(publishedAt)) : ""} ago</span>
         </div>
-        <div className={`text-sm ${showFullDescription ? "" : "line-clamp-3"}`}>
+        <div className={`text-sm ${showFullDescription ? "whitespace-pre-wrap" : "line-clamp-3"}`}>
           <p>
-            Sample video description. This would contain the actual video
-            description from the database.
+            {description}
           </p>
         </div>
         <Button

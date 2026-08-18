@@ -105,7 +105,7 @@ export default function HistoryContent() {
                 <video
                   src={videoSrc}
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
-                  preload="metadata"
+                  preload="metadata" crossOrigin="anonymous"
                 />
               </div>
             </Link>

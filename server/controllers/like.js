@@ -1,5 +1,6 @@
 import video from "../Modals/video.js";
 import like from "../Modals/like.js";
+import mongoose from "mongoose";
 
 export const handlelike = async (req, res) => {
   const { userId, action } = req.body; // action can be 'like' or 'dislike'
@@ -16,9 +17,9 @@ export const handlelike = async (req, res) => {
         // Toggle off the same action
         await like.findByIdAndDelete(existingAction._id);
         if (action === 'like') {
-          await video.findByIdAndUpdate(videoId, { $inc: { Like: -1 } });
+          if (mongoose.Types.ObjectId.isValid(videoId)) await video.findByIdAndUpdate(videoId, { $inc: { Like: -1 } });
         } else {
-          await video.findByIdAndUpdate(videoId, { $inc: { Dislike: -1 } });
+          if (mongoose.Types.ObjectId.isValid(videoId)) await video.findByIdAndUpdate(videoId, { $inc: { Dislike: -1 } });
         }
         return res.status(200).json({ status: 'removed' });
       } else {
@@ -26,9 +27,9 @@ export const handlelike = async (req, res) => {
         existingAction.action = action;
         await existingAction.save();
         if (action === 'like') {
-          await video.findByIdAndUpdate(videoId, { $inc: { Like: 1, Dislike: -1 } });
+          if (mongoose.Types.ObjectId.isValid(videoId)) await video.findByIdAndUpdate(videoId, { $inc: { Like: 1, Dislike: -1 } });
         } else {
-          await video.findByIdAndUpdate(videoId, { $inc: { Dislike: 1, Like: -1 } });
+          if (mongoose.Types.ObjectId.isValid(videoId)) await video.findByIdAndUpdate(videoId, { $inc: { Dislike: 1, Like: -1 } });
         }
         return res.status(200).json({ status: 'switched', action });
       }
@@ -36,9 +37,9 @@ export const handlelike = async (req, res) => {
       // Create new action
       await like.create({ viewer: userId, videoid: videoId, action });
       if (action === 'like') {
-        await video.findByIdAndUpdate(videoId, { $inc: { Like: 1 } });
+        if (mongoose.Types.ObjectId.isValid(videoId)) await video.findByIdAndUpdate(videoId, { $inc: { Like: 1 } });
       } else {
-        await video.findByIdAndUpdate(videoId, { $inc: { Dislike: 1 } });
+        if (mongoose.Types.ObjectId.isValid(videoId)) await video.findByIdAndUpdate(videoId, { $inc: { Dislike: 1 } });
       }
       return res.status(200).json({ status: 'added', action });
     }

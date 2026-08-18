@@ -4,6 +4,7 @@ import VideoInfo from "@/components/VideoInfo";
 import Videopplayer from "@/components/Videopplayer";
 import WatchPartyManager from "@/components/WatchPartyManager";
 import axiosInstance from "@/lib/axiosinstance";
+import { fetchTrendingVideos, getVideoDetails } from "@/lib/youtubeApi";
 import { notFound } from "next/navigation";
 import { useRouter } from "next/router";
 import React, { useEffect, useMemo, useState } from "react";
@@ -21,17 +22,15 @@ const index = () => {
     const fetchvideo = async () => {
       if (!id || typeof id !== "string") return;
       try {
-        let allVideos = [];
         try {
-          const res = await axiosInstance.get("/video/getall");
-          allVideos = res.data || [];
+          const video = await getVideoDetails(id);
+          setCurrentVideo(video);
+          
+          const trending = await fetchTrendingVideos();
+          setAllVideosList(trending || []);
         } catch (err) {
-          console.log("Failed to fetch from backend");
+          console.log("Failed to fetch from YouTube API");
         }
-
-        const video = allVideos.filter((vid: any) => vid._id === id);
-        setCurrentVideo(video[0]);
-        setAllVideosList(allVideos);
       } catch (error) {
         console.log(error);
       } finally {
@@ -132,9 +131,10 @@ const index = () => {
               onPlayPauseSync={(isPlaying, time) => setLocalSyncState({ isPlaying, time, timestamp: Date.now() })}
               onNext={() => {
                 if (allVideosList.length > 0) {
-                  const currentIndex = allVideosList.findIndex(v => v._id === currentVideo._id);
+                  const currentIndex = allVideosList.findIndex(v => (v.id || v.id?.videoId || v._id) === id);
                   const nextIndex = (currentIndex + 1) % allVideosList.length;
-                  router.push(`/watch/${allVideosList[nextIndex]._id}`);
+                  const nextId = allVideosList[nextIndex].id || allVideosList[nextIndex].id?.videoId || allVideosList[nextIndex]._id;
+                  router.push(`/watch/${nextId}`);
                 }
               }} 
             />

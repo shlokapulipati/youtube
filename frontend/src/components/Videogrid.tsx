@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Videocard from "./videocard";
-import axiosInstance from "@/lib/axiosinstance";
+import { fetchTrendingVideos } from "@/lib/youtubeApi";
 
 const Videogrid = () => {
   const [videos, setvideo] = useState<any[]>([]);
@@ -9,12 +9,8 @@ const Videogrid = () => {
   useEffect(() => {
     const fetchVideos = async () => {
       try {
-        const response = await axiosInstance.get('/video/getall');
-        if (response.data && response.data.length > 0) {
-          setvideo(response.data);
-        } else {
-          setvideo([]);
-        }
+        const data = await fetchTrendingVideos();
+        setvideo(data || []);
       } catch (error) {
         console.error("Failed to fetch videos", error);
       } finally {
@@ -30,7 +26,7 @@ const Videogrid = () => {
       {loading ? (
         <>Loading..</>
       ) : (
-        videos.map((video: any) => <Videocard key={video._id} video={video} />)
+        videos.map((video: any) => <Videocard key={video.id || video._id} video={video} />)
       )}
     </div>
   );
