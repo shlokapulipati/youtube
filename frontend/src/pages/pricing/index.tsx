@@ -12,14 +12,19 @@ export default function PricingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
 
+  const planWeights: Record<string, number> = { 'Free': 0, 'Bronze': 1, 'Silver': 2, 'Gold': 3 };
+
   const handleUpgrade = async (planType: string) => {
     if (!user) {
       toast.error('Please sign in to upgrade your plan.');
       return;
     }
 
-    if (user.plan === planType) {
-      toast.info(`You are already on the ${planType} plan!`);
+    const userWeight = planWeights[user.plan || 'Free'];
+    const targetWeight = planWeights[planType];
+
+    if (userWeight >= targetWeight) {
+      toast.info(`You already have this plan or a higher one!`);
       return;
     }
 
@@ -91,12 +96,18 @@ export default function PricingPage() {
   const getButtonText = (planType: string) => {
     if (loading === planType) return 'Processing...';
     if (user?.plan === planType) return 'Current Plan';
-    if (user?.plan === 'Gold') return 'Upgrade to Gold (Current)'; // If already gold, they can't upgrade.
+    
+    const userWeight = planWeights[user?.plan || 'Free'];
+    const currentWeight = planWeights[planType];
+    
+    if (userWeight > currentWeight) return 'Included';
     return `Upgrade to ${planType}`;
   };
 
   const isButtonDisabled = (planType: string) => {
-    return loading !== null || user?.plan === planType;
+    const userWeight = planWeights[user?.plan || 'Free'];
+    const currentWeight = planWeights[planType];
+    return loading !== null || userWeight >= currentWeight;
   };
 
   return (
@@ -142,7 +153,7 @@ export default function PricingPage() {
                 </ul>
                 <div className="mt-8">
                   <Button className="w-full bg-gray-200 text-gray-800 hover:bg-gray-300" disabled>
-                    {(!user?.plan || user?.plan === 'Free') ? 'Current Plan' : 'Free Plan'}
+                    {(!user?.plan || user?.plan === 'Free') ? 'Current Plan' : 'Included'}
                   </Button>
                 </div>
               </div>
