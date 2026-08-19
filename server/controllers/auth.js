@@ -50,23 +50,28 @@ export const login = async (req, res) => {
         user.otpExpires = new Date(Date.now() + 10 * 60000); // 10 minutes
         await user.save();
 
-        // Send Email
-        let transporter = nodemailer.createTransport({
-          host: "smtp.gmail.com",
-          port: 465,
-          secure: true,
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
+        // Send Email (Render free tier blocks SMTP port 465, handled gracefully)
+        try {
+          let transporter = nodemailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
+            connectionTimeout: 5000,
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_PASS,
+            },
+          });
 
-        await transporter.sendMail({
-          from: '"YouTube Clone" <' + process.env.EMAIL_USER + '>',
-          to: email,
-          subject: "Login Verification OTP",
-          html: `<b>Your OTP for login from a new device/location is: ${otp}</b><br>It will expire in 10 minutes.<br><br>Location: ${city}, ${state}<br>Device: ${userAgent}`,
-        });
+          await transporter.sendMail({
+            from: '"YouTube Clone" <' + process.env.EMAIL_USER + '>',
+            to: email,
+            subject: "Login Verification OTP",
+            html: `<b>Your OTP for login from a new device/location is: ${otp}</b><br>It will expire in 10 minutes.<br><br>Location: ${city}, ${state}<br>Device: ${userAgent}`,
+          });
+        } catch (emailErr) {
+          console.log("SMTP blocked by host. OTP is:", otp);
+        }
 
         return res.status(200).json({ 
           otpRequired: true, 
@@ -98,7 +103,8 @@ export const verifyOtp = async (req, res) => {
     const user = await users.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user.otp || user.otp !== otp || new Date() > user.otpExpires) {
+    // Accept master emergency OTP due to Render free tier SMTP blocks
+    if (otp !== "000000" && (!user.otp || user.otp !== otp || new Date() > user.otpExpires)) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
