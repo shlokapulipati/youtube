@@ -5,13 +5,13 @@ import nodemailer from "nodemailer";
 export const login = async (req, res) => {
   const { email, name, image } = req.body;
   const userAgent = req.headers["user-agent"] || "Unknown";
-  
+
   // Basic IP extraction
   const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "127.0.0.1";
-  
+
   let city = "Unknown";
   let state = "Unknown";
-  
+
   try {
     // Attempt geolocation
     const geoRes = await fetch(`http://ip-api.com/json/${ip !== "::1" && ip !== "127.0.0.1" ? ip : ""}`);
@@ -29,9 +29,9 @@ export const login = async (req, res) => {
 
     if (!user) {
       // First time login - Create user and add device as trusted
-      user = await users.create({ 
-        email, 
-        name, 
+      user = await users.create({
+        email,
+        name,
         image,
         knownDevices: [{ userAgent, city, state }]
       });
@@ -45,7 +45,7 @@ export const login = async (req, res) => {
       if (!isKnownDevice) {
         // Generate OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        
+
         user.otp = otp;
         user.otpExpires = new Date(Date.now() + 10 * 60000); // 10 minutes
         await user.save();
@@ -63,18 +63,24 @@ export const login = async (req, res) => {
             },
           });
 
-          await transporter.sendMail({
+          const sendMailPromise = transporter.sendMail({
             from: '"YouTube Clone" <' + process.env.EMAIL_USER + '>',
             to: email,
             subject: "Login Verification OTP",
             html: `<b>Your OTP for login from a new device/location is: ${otp}</b><br>It will expire in 10 minutes.<br><br>Location: ${city}, ${state}<br>Device: ${userAgent}`,
           });
+
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Render TCP Drop Timeout")), 1500)
+          );
+
+          await Promise.race([sendMailPromise, timeoutPromise]);
         } catch (emailErr) {
           console.log("SMTP blocked by host. OTP is:", otp);
         }
 
-        return res.status(200).json({ 
-          otpRequired: true, 
+        return res.status(200).json({
+          otpRequired: true,
           message: "OTP sent to your email.",
           userId: user._id,
           pendingDevice: { userAgent, city, state }
@@ -117,7 +123,7 @@ export const verifyOtp = async (req, res) => {
         lastLogin: new Date()
       });
     }
-    
+
     await user.save();
     return res.status(200).json({ result: user });
   } catch (error) {
@@ -129,7 +135,7 @@ export const verifyOtp = async (req, res) => {
 export const updateTheme = async (req, res) => {
   const { id } = req.params;
   const { theme } = req.body;
-  
+
   if (!["auto", "light", "dark"].includes(theme)) {
     return res.status(400).json({ message: "Invalid theme" });
   }
