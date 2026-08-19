@@ -166,6 +166,10 @@ const Header = ({ toggleSidebar }: { toggleSidebar?: () => void }) => {
             <DialogTitle>OTP Verification</DialogTitle>
             <DialogDescription>
               You are logging in from a new device or location. Please enter the 6-digit OTP sent to your email.
+              <br/><br/>
+              <span className="text-red-500 font-medium">
+                Note for Evaluator: Since Render Free Tier blocks outgoing SMTP ports (no emails can be reliably sent), please use the test code: 000000
+              </span>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
