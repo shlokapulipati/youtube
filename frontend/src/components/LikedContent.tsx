@@ -123,11 +123,11 @@ export default function LikedVideosContent() {
                 {item.videoid.videochanel}
               </p>
               <p className="text-sm text-gray-600">
-                {item.videoid.views.toLocaleString()} views •{" "}
-                {formatDistanceToNow(new Date(item.videoid.createdAt))} ago
+                {item.videoid.views?.toLocaleString() || 0} views •{" "}
+                {item.videoid.createdAt ? formatDistanceToNow(new Date(item.videoid.createdAt)) + " ago" : ""}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Liked {formatDistanceToNow(new Date(item.createdAt))} ago
+                {item.createdAt ? "Liked " + formatDistanceToNow(new Date(item.createdAt)) + " ago" : ""}
               </p>
             </div>
 

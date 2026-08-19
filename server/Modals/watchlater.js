@@ -7,7 +7,8 @@ const watchlaterschema = mongoose.Schema(
       required: true,
     },
     videoid: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "videofiles",
       required: true,
     },
     likedon: { type: Date, default: Date.now },

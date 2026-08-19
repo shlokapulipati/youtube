@@ -15,12 +15,8 @@ import axiosInstance from "@/lib/axiosinstance";
 import { toast } from "sonner";
 
 const VideoInfo = ({ video }: any) => {
-  const isYouTube = !!video?.snippet;
-  const initialLikes = isYouTube ? parseInt(video.statistics?.likeCount || "0") : (video?.Like || 0);
-  const initialDislikes = isYouTube ? 0 : (video?.Dislike || 0);
-
-  const [likes, setlikes] = useState(initialLikes);
-  const [dislikes, setDislikes] = useState(initialDislikes);
+  const [likes, setlikes] = useState(video?.Like || 0);
+  const [dislikes, setDislikes] = useState(video?.Dislike || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -36,11 +32,11 @@ const VideoInfo = ({ video }: any) => {
   //   image: "https://github.com/shadcn.png?height=32&width=32",
   // };
   useEffect(() => {
-    setlikes(isYouTube ? parseInt(video.statistics?.likeCount || "0") : (video.Like || 0));
-    setDislikes(isYouTube ? 0 : (video.Dislike || 0));
+    setlikes(video?.Like || 0);
+    setDislikes(video?.Dislike || 0);
     
     const checkStatus = async () => {
-      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      const videoId = video?._id;
       if (user && videoId) {
         try {
           const [likeRes, watchRes] = await Promise.all([
@@ -57,7 +53,7 @@ const VideoInfo = ({ video }: any) => {
     };
     
     const fetchSubData = async () => {
-      const channelTitle = isYouTube ? video.snippet?.channelTitle : video?.videochanel;
+      const channelTitle = video?.videochanel;
       if (channelTitle) {
         try {
           const subCountRes = await axiosInstance.get(`/subscribe/count/${encodeURIComponent(channelTitle)}`);
@@ -77,7 +73,7 @@ const VideoInfo = ({ video }: any) => {
 
   useEffect(() => {
     const handleviews = async () => {
-      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      const videoId = video?._id;
       if (user) {
         try {
           return await axiosInstance.post(`/history/${videoId}`, {
@@ -102,7 +98,7 @@ const VideoInfo = ({ video }: any) => {
       return;
     }
     try {
-      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      const videoId = video?._id;
       const res = await axiosInstance.post(`/like/${videoId}`, {
         userId: user?._id,
         action: 'like'
@@ -132,7 +128,7 @@ const VideoInfo = ({ video }: any) => {
       return;
     }
     try {
-      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      const videoId = video?._id;
       const res = await axiosInstance.post(`/watch/${videoId}`, {
         userId: user?._id,
       });
@@ -149,7 +145,7 @@ const VideoInfo = ({ video }: any) => {
       return;
     }
     try {
-      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      const videoId = video?._id;
       const res = await axiosInstance.post(`/like/${videoId}`, {
         userId: user?._id,
         action: 'dislike'
@@ -187,7 +183,7 @@ const VideoInfo = ({ video }: any) => {
     
     try {
       toast.loading("Requesting download...", { id: "download" });
-      const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : video?._id;
+      const videoId = video?._id;
       const res = await axiosInstance.post(`/download/request`, {
         userid: user._id,
         videoid: videoId
@@ -204,7 +200,7 @@ const VideoInfo = ({ video }: any) => {
       return;
     }
     try {
-      const channelTitle = isYouTube ? video.snippet?.channelTitle : video?.videochanel;
+      const channelTitle = video?.videochanel;
       const res = await axiosInstance.post('/subscribe', { userId: user._id, channelName: channelTitle });
       if (res.data.subscribed) {
          setIsSubscribed(true);
@@ -220,11 +216,11 @@ const VideoInfo = ({ video }: any) => {
     }
   };
 
-  const title = isYouTube ? video.snippet?.title : video?.videotitle;
-  const channelTitle = isYouTube ? video.snippet?.channelTitle : video?.videochanel;
-  const views = isYouTube ? parseInt(video.statistics?.viewCount || "0") : (video?.views || 0);
-  const publishedAt = isYouTube ? video.snippet?.publishedAt || video.snippet?.publishTime : video?.createdAt;
-  const description = isYouTube ? video.snippet?.description : "Sample video description from standard database structures.";
+  const title = video?.videotitle;
+  const channelTitle = video?.videochanel;
+  const views = video?.views || 0;
+  const publishedAt = video?.createdAt;
+  const description = video?.description || "Sample video description from standard database structures.";
 
   return (
     <div className="space-y-4">
@@ -236,18 +232,18 @@ const VideoInfo = ({ video }: any) => {
             <AvatarFallback>{channelTitle?.[0] || 'Y'}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-medium">{channelTitle}</h3>
-            <p className="text-sm text-gray-600">{subscribers.toLocaleString()} subscribers</p>
+            <h3 className="font-medium text-foreground">{channelTitle}</h3>
+            <p className="text-sm text-muted-foreground">{subscribers.toLocaleString()} subscribers</p>
           </div>
           <Button 
-            className={`ml-4 ${isSubscribed ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' : ''}`}
+            className={`ml-4 ${isSubscribed ? 'bg-gray-200 text-black hover:bg-gray-300' : 'bg-red-600 hover:bg-red-700 text-white'}`}
             onClick={handleSubscribe}
           >
             {isSubscribed ? "Subscribed" : "Subscribe"}
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-gray-100 rounded-full">
+          <div className="flex items-center bg-secondary text-secondary-foreground rounded-full">
             <Button
               variant="ghost"
               size="sm"
@@ -279,8 +275,8 @@ const VideoInfo = ({ video }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-gray-100 rounded-full ${
-              isWatchLater ? "text-primary" : ""
+            className={`bg-secondary text-secondary-foreground rounded-full ${
+              isWatchLater ? "text-primary font-semibold" : ""
             }`}
             onClick={handleWatchLater}
           >
@@ -290,7 +286,7 @@ const VideoInfo = ({ video }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-gray-100 rounded-full"
+            className="bg-secondary text-secondary-foreground rounded-full"
             onClick={handleShare}
           >
             <Share className="w-5 h-5 mr-2" />
@@ -299,7 +295,7 @@ const VideoInfo = ({ video }: any) => {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-gray-100 rounded-full"
+            className="bg-secondary text-secondary-foreground rounded-full"
             onClick={handleDownload}
           >
             <Download className="w-5 h-5 mr-2" />
@@ -308,14 +304,14 @@ const VideoInfo = ({ video }: any) => {
           <Button
             variant="ghost"
             size="icon"
-            className="bg-gray-100 rounded-full"
+            className="bg-secondary text-secondary-foreground rounded-full"
           >
             <MoreHorizontal className="w-5 h-5" />
           </Button>
         </div>
       </div>
-      <div className="bg-gray-100 rounded-lg p-4">
-        <div className="flex gap-4 text-sm font-medium mb-2">
+      <div className="bg-secondary text-secondary-foreground rounded-lg p-4">
+        <div className="flex gap-4 text-sm font-medium mb-2 opacity-80">
           <span>{views.toLocaleString()} views</span>
           <span>{publishedAt ? formatDistanceToNow(new Date(publishedAt)) : ""} ago</span>
         </div>

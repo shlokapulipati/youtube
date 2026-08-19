@@ -18,6 +18,7 @@ const index = () => {
   //   email: "john@example.com",
   //   image: "https://github.com/shadcn.png?height=32&width=32",
   // };
+  const [channelData, setChannelData] = useState<any>(null);
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,10 +26,14 @@ const index = () => {
     const fetchVideos = async () => {
       if (!id) return;
       try {
-        const response = await axiosInstance.get(`/video/channel/${id}`);
-        setVideos(response.data);
+        const [videosRes, userRes] = await Promise.all([
+           axiosInstance.get(`/video/channel/${id}`).catch(() => ({ data: [] })),
+           axiosInstance.get(`/user/${id}`).catch(() => ({ data: { result: null } }))
+        ]);
+        setVideos(videosRes.data);
+        setChannelData(userRes.data.result);
       } catch (error) {
-        console.error("Failed to fetch channel videos", error);
+        console.error("Failed to fetch channel data", error);
       } finally {
         setLoading(false);
       }
@@ -36,8 +41,12 @@ const index = () => {
     fetchVideos();
   }, [id]);
 
+  if (loading) {
+    return <div className="flex-1 min-h-screen flex items-center justify-center">Loading channel...</div>;
+  }
+
   try {
-    let channel = user;
+    let channel = channelData || {};
     return (
       <div className="flex-1 min-h-screen bg-white">
         <div className="max-w-full mx-auto">

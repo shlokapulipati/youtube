@@ -4,7 +4,7 @@ import VideoInfo from "@/components/VideoInfo";
 import Videopplayer from "@/components/Videopplayer";
 import WatchPartyManager from "@/components/WatchPartyManager";
 import axiosInstance from "@/lib/axiosinstance";
-import { fetchTrendingVideos, getVideoDetails } from "@/lib/youtubeApi";
+
 import { notFound } from "next/navigation";
 import { useRouter } from "next/router";
 import React, { useEffect, useMemo, useState } from "react";
@@ -23,13 +23,13 @@ const index = () => {
       if (!id || typeof id !== "string") return;
       try {
         try {
-          const video = await getVideoDetails(id);
-          setCurrentVideo(video);
-          
-          const trending = await fetchTrendingVideos();
-          setAllVideosList(trending || []);
+          const res = await axiosInstance.get('/video/getall');
+          const allvids = res.data || [];
+          setAllVideosList(allvids);
+          const found = allvids.find((v: any) => v._id === id);
+          setCurrentVideo(found);
         } catch (err) {
-          console.log("Failed to fetch from YouTube API");
+          console.log("Failed to fetch videos from server");
         }
       } catch (error) {
         console.log(error);
@@ -71,7 +71,7 @@ const index = () => {
   // ];
   if (loading) {
     return (
-      <div className="flex-1 min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex-1 min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="animate-pulse text-xl text-gray-500 font-medium">Loading...</div>
       </div>
     );
@@ -79,7 +79,7 @@ const index = () => {
   
   if (!currentVideo) {
     return (
-      <div className="flex-1 min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="flex-1 min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
         <svg className="w-24 h-24 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
@@ -100,7 +100,7 @@ const index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-7xl mx-auto p-4 flex flex-col gap-6">
         
         {/* Watch Party Header & Manager */}

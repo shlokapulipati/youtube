@@ -114,8 +114,8 @@ const Header = ({ toggleSidebar }: { toggleSidebar?: () => void }) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 {user?.channelname ? (
-                  <DropdownMenuItem asChild>
-                    <Link href={`/channel/${user?._id}`}>Your channel</Link>
+                  <DropdownMenuItem onClick={() => router.push(`/channel/${user?._id}`)}>
+                    Your channel
                   </DropdownMenuItem>
                 ) : (
                   <div className="px-2 py-1.5">
@@ -129,14 +129,14 @@ const Header = ({ toggleSidebar }: { toggleSidebar?: () => void }) => {
                     </Button>
                   </div>
                 )}
-                <DropdownMenuItem asChild>
-                  <Link href="/history">History</Link>
+                <DropdownMenuItem onClick={() => router.push('/history')}>
+                  History
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/liked">Liked videos</Link>
+                <DropdownMenuItem onClick={() => router.push('/liked')}>
+                  Liked videos
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/watch-later">Watch later</Link>
+                <DropdownMenuItem onClick={() => router.push('/watch-later')}>
+                  Watch later
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>Sign out</DropdownMenuItem>

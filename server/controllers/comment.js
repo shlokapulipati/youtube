@@ -1,7 +1,7 @@
 import comment from "../Modals/comment.js";
 import mongoose from "mongoose";
 
-const BAD_WORDS = ["spam", "abuse", "fake", "scam", "stupid", "idiot", "badword", "hate", "motherfucker", "bitch", "fuck", "shit"];
+const BAD_WORDS = ["spam", "abuse", "fake", "scam", "stupid", "idiot", "badword", "hate", "motherfucker", "bitch", "fuck", "shit", "asshole", "bastard", "crap", "cunt", "dick", "pussy", "slut", "whore", "kill", "die", "nigger", "faggot", "retard"];
 
 const detectSpamOrAbuse = (text) => {
   if (!text) return null;

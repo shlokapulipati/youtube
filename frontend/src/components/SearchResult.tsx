@@ -1,32 +1,40 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { searchVideos } from "@/lib/youtubeApi";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import axiosInstance from "@/lib/axiosinstance";
 
 const SearchResult = ({ query }: any) => {
   if (!query.trim()) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Enter a search term to find videos and channels.
         </p>
       </div>
     );
   }
   const [video, setvideos] = useState<any>(null);
+  
   const videos = async () => {
     try {
-      const allVideos = await searchVideos(query);
-      setvideos(allVideos || []);
+      const res = await axiosInstance.get('/video/getall');
+      const allVideos = res.data || [];
+      const filtered = allVideos.filter((v: any) => 
+        (v.videotitle?.toLowerCase().includes(query.toLowerCase())) || 
+        (v.videochanel?.toLowerCase().includes(query.toLowerCase()))
+      );
+      setvideos(filtered);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch videos from server", err);
       setvideos([]);
     }
   };
+  
   useEffect(() => {
     videos();
   }, [query]);
+  
   if (!video) {
     return (
       <div className="text-center py-12">
@@ -37,7 +45,8 @@ const SearchResult = ({ query }: any) => {
       </div>
     );
   }
-  const hasResults = video ? video.length > 0 : true;
+  
+  const hasResults = video.length > 0;
   if (!hasResults) {
     return (
       <div className="text-center py-12">
@@ -48,34 +57,36 @@ const SearchResult = ({ query }: any) => {
       </div>
     );
   }
+  
   return (
     <div className="space-y-6">
       {/* Video Results */}
       {video.length > 0 && (
         <div className="space-y-4">
-          {video.map((video: any) => {
-            const isYouTube = !!video?.snippet;
-            const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : (video?._id || "");
-            const title = isYouTube ? video.snippet?.title : video?.videotitle;
-            const channelTitle = isYouTube ? video.snippet?.channelTitle : video?.videochanel;
-            const views = isYouTube ? (video.statistics?.viewCount || 0) : (video?.views || 0);
-            const publishedAt = isYouTube ? video.snippet?.publishedAt || video.snippet?.publishTime : video?.createdAt;
-            const thumbnail = isYouTube 
-              ? (video.snippet?.thumbnails?.high?.url || video.snippet?.thumbnails?.medium?.url) 
-              : "";
+          {video.map((v: any) => {
+            const videoId = v._id || "";
+            const title = v.videotitle;
+            const channelTitle = v.videochanel;
+            const views = v.views || 0;
+            const publishedAt = v.createdAt;
+            
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+            const normalizedPath = v.filepath?.replace(/\\/g, '/');
+            let videoSrc = v.filepath?.startsWith("http") 
+              ? v.filepath 
+              : (v.filepath?.startsWith("/video/") 
+                  ? v.filepath 
+                  : `${backendUrl}/${normalizedPath}`);
 
             return (
             <div key={videoId} className="flex gap-4 group">
               <Link href={`/watch/${videoId}`} className="flex-shrink-0">
-                <div className="relative w-80 aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                  {isYouTube ? (
-                    <img src={thumbnail} alt={title} className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full" />
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-full text-gray-500">No Image</div>
-                  )}
-                  <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded">
-                    API Result
-                  </div>
+                <div className="relative w-80 aspect-video bg-gray-100 rounded-lg overflow-hidden bg-secondary">
+                  <video
+                    src={videoSrc}
+                    className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
+                    preload="metadata" crossOrigin="anonymous"
+                  />
                 </div>
               </Link>
 
@@ -86,7 +97,7 @@ const SearchResult = ({ query }: any) => {
                   </h3>
                 </Link>
 
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                   <span>{Number(views).toLocaleString()} views</span>
                   <span>•</span>
                   <span>
@@ -95,7 +106,7 @@ const SearchResult = ({ query }: any) => {
                 </div>
 
                 <Link
-                  href={`/channel/${video.snippet?.channelId || video.uploader}`}
+                  href={`/channel/${v.uploader}`}
                   className="flex items-center gap-2 mb-2 hover:text-blue-600"
                 >
                   <Avatar className="w-6 h-6">
@@ -103,15 +114,13 @@ const SearchResult = ({ query }: any) => {
                       {channelTitle?.[0] || "Y"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     {channelTitle}
                   </span>
                 </Link>
 
-                <p className="text-sm text-gray-700 line-clamp-2">
-                  Sample video description that would show search-relevant
-                  content and help users understand what the video is about
-                  before clicking.
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {v.description || "Video from standard local databases."}
                 </p>
               </div>
             </div>
@@ -123,8 +132,8 @@ const SearchResult = ({ query }: any) => {
       {/* Load More Results */}
       {hasResults && (
         <div className="text-center py-8">
-          <p className="text-gray-600">
-            Showing {videos.length} results for "{query}"
+          <p className="text-muted-foreground">
+            Showing {video.length} results for "{query}"
           </p>
         </div>
       )}

@@ -7,7 +7,8 @@ const likeschema = mongoose.Schema(
       required: true,
     },
     videoid: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "videofiles",
       required: true,
     },
     action: {

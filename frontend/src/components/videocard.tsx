@@ -1,41 +1,25 @@
-"use clinet";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 
-const videos = "/video/vdo.mp4";
 export default function VideoCard({ video }: any) {
-  const isYouTube = !!video?.snippet;
-  
-  const videoId = isYouTube ? (typeof video.id === 'string' ? video.id : video.id.videoId) : (video?._id || "");
-  const title = isYouTube ? video.snippet?.title : video?.videotitle;
-  const channelTitle = isYouTube ? video.snippet?.channelTitle : video?.videochanel;
-  const views = isYouTube ? (video.statistics?.viewCount || 0) : video?.views;
-  const publishedAt = isYouTube ? video.snippet?.publishedAt || video.snippet?.publishTime : video?.createdAt;
-  const thumbnail = isYouTube 
-    ? (video.snippet?.thumbnails?.high?.url || video.snippet?.thumbnails?.medium?.url) 
-    : "";
+  const videoId = video?._id || "";
+  const title = video?.videotitle;
+  const channelTitle = video?.videochanel;
+  const views = video?.views || 0;
+  const publishedAt = video?.createdAt;
 
   return (
     <Link href={`/watch/${videoId}`} className="group">
       <div className="space-y-3">
         <div className="relative aspect-video rounded-lg overflow-hidden bg-secondary">
-          {isYouTube ? (
-            <img src={thumbnail} alt={title} className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full" />
-          ) : (
-            <video 
-              src={(video?.filepath?.startsWith("http") || video?.filepath?.startsWith("/video/")) 
-                ? `${video.filepath}` 
-                : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${video?.filepath?.replace(/\\/g, '/')}`} 
-              className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full pointer-events-none" 
-              preload="metadata" crossOrigin="anonymous" 
-            />
-          )}
-          {isYouTube && (
-            <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded">
-              API Result
-            </div>
-          )}
+          <video 
+            src={(video?.filepath?.startsWith("http") || video?.filepath?.startsWith("/video/")) 
+              ? `${video.filepath}` 
+              : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${video?.filepath?.replace(/\\/g, '/')}`} 
+            className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full pointer-events-none" 
+            preload="metadata" crossOrigin="anonymous" 
+          />
         </div>
         <div className="flex gap-3">
           <Avatar className="w-9 h-9 flex-shrink-0">

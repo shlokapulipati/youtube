@@ -8,6 +8,7 @@ const userschema = mongoose.Schema({
   joinedon: { type: Date, default: Date.now },
   plan: { type: String, enum: ["Free", "Bronze", "Silver", "Gold"], default: "Free" },
   theme: { type: String, enum: ["auto", "light", "dark"], default: "auto" },
+  shareLocation: { type: Boolean, default: true },
   knownDevices: [
     {
       userAgent: { type: String },

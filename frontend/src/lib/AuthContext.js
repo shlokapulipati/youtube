@@ -104,8 +104,8 @@ export const UserProvider = ({ children }) => {
         const istTime = new Date(utc + (3600000 * 5.5));
         const hours = istTime.getHours();
         
-        // 10:00 AM to 12:00 PM IST is hours 10 and 11
-        if (hours >= 10 && hours < 12) {
+        // 6:00 AM to 6:00 PM IST is daytime
+        if (hours >= 6 && hours < 18) {
           appliedTheme = 'light';
         } else {
           appliedTheme = 'dark';

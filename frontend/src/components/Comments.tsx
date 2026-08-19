@@ -24,7 +24,7 @@ interface Comment {
   translatedText?: string;
 }
 
-const BAD_WORDS = ["spam", "abuse", "fake", "scam", "stupid", "idiot", "badword", "hate", "motherfucker", "bitch", "fuck", "shit"]; 
+const BAD_WORDS = ["spam", "abuse", "fake", "scam", "stupid", "idiot", "badword", "hate", "motherfucker", "bitch", "fuck", "shit", "asshole", "bastard", "crap", "cunt", "dick", "pussy", "slut", "whore", "kill", "die", "nigger", "faggot", "retard"]; 
 
 const detectSpamOrAbuse = (text: string) => {
   const lowerText = text.toLowerCase();
@@ -152,13 +152,13 @@ const Comments = ({ videoId }: { videoId: string }) => {
               placeholder="Add a comment..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:ring-0 resize-none min-h-[40px] px-0 pb-1"
+              className="w-full bg-transparent border-b border-border focus:border-primary focus:ring-0 resize-none min-h-[40px] px-0 pb-1"
               rows={1}
             />
             {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
             
             <div className="flex justify-between items-center mt-2">
-              <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                 <input 
                   type="checkbox" 
                   checked={showLocation} 
@@ -186,11 +186,11 @@ const Comments = ({ videoId }: { videoId: string }) => {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm">@{comment.usercommented}</span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   {comment.commentedon ? formatDistanceToNow(new Date(comment.commentedon)) : "recently"} ago
                 </span>
                 {comment.location && (
-                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                  <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
                     📍 {comment.location}
                   </span>
                 )}
@@ -205,16 +205,16 @@ const Comments = ({ videoId }: { videoId: string }) => {
               </p>
               
               <div className="flex items-center gap-4 mt-2">
-                <button onClick={() => handleAction(comment._id, "like")} className={`flex items-center gap-1 hover:text-black ${comment.likes?.includes(user?._id) ? "text-blue-600" : "text-gray-500"}`}>
+                <button onClick={() => handleAction(comment._id, "like")} className={`flex items-center gap-1 hover:text-foreground ${comment.likes?.includes(user?._id) ? "text-blue-600" : "text-muted-foreground"}`}>
                   <ThumbsUp className="w-4 h-4" /> <span className="text-xs">{comment.likes?.length || ""}</span>
                 </button>
-                <button onClick={() => handleAction(comment._id, "dislike")} className={`flex items-center gap-1 hover:text-black ${comment.dislikes?.includes(user?._id) ? "text-red-600" : "text-gray-500"}`}>
+                <button onClick={() => handleAction(comment._id, "dislike")} className={`flex items-center gap-1 hover:text-foreground ${comment.dislikes?.includes(user?._id) ? "text-red-600" : "text-muted-foreground"}`}>
                   <ThumbsDown className="w-4 h-4" /> <span className="text-xs">{comment.dislikes?.length || ""}</span>
                 </button>
-                <button onClick={() => handleTranslate(comment._id, comment.commentbody)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-black font-medium">
+                <button onClick={() => handleTranslate(comment._id, comment.commentbody)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-medium">
                   <Globe2 className="w-3 h-3" /> {comment.isTranslated ? "Show original" : "Translate"}
                 </button>
-                <button onClick={() => handleAction(comment._id, "report")} className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 font-medium ml-auto">
+                <button onClick={() => handleAction(comment._id, "report")} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-red-500 font-medium ml-auto">
                   <Flag className="w-3 h-3" /> Report
                 </button>
               </div>
