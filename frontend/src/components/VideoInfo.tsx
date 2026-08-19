@@ -226,8 +226,8 @@ const VideoInfo = ({ video }: any) => {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">{title}</h1>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-y-4 gap-x-2">
+        <div className="flex items-center gap-4 shrink-0">
           <Avatar className="w-10 h-10">
             <AvatarFallback>{channelTitle?.[0] || 'Y'}</AvatarFallback>
           </Avatar>
@@ -242,8 +242,8 @@ const VideoInfo = ({ video }: any) => {
             {isSubscribed ? "Subscribed" : "Subscribe"}
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-secondary text-secondary-foreground rounded-full">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
+          <div className="flex flex-nowrap items-center bg-secondary text-secondary-foreground rounded-full shrink-0">
             <Button
               variant="ghost"
               size="sm"
