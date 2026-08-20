@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import Videocard from "./videocard";
 import axiosInstance from "@/lib/axiosinstance";
 
-const Videogrid = () => {
-  const [videos, setvideo] = useState<any[]>([]);
-  const [loading, setloading] = useState(true);
+const Videogrid = ({ initialVideos = [] }: { initialVideos?: any[] }) => {
+  const [videos, setvideo] = useState<any[]>(initialVideos);
+  const [loading, setloading] = useState(initialVideos.length === 0);
 
   useEffect(() => {
     const fetchVideos = async () => {
